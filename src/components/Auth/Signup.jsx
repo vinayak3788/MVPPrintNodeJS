@@ -1,14 +1,11 @@
 import React, { useState } from "react";
+import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { auth, db, googleProvider } from "../../services/firebaseConfig";
-import {
-  createUserWithEmailAndPassword,
-  updateProfile,
-  signInWithPopup,
-} from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { setDoc, doc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -16,151 +13,142 @@ const Signup = () => {
     email: "",
     password: "",
   });
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    setError("");
-
-    const { email, password, firstName, lastName, mobile } = formData;
-
     try {
-      const userCred = await createUserWithEmailAndPassword(
+      const res = await createUserWithEmailAndPassword(
         auth,
-        email,
-        password,
+        formData.email,
+        formData.password,
       );
-      await updateProfile(userCred.user, {
-        displayName: `${firstName} ${lastName}`,
+
+      await setDoc(doc(db, "users", res.user.uid), {
+        uid: res.user.uid,
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        mobile: formData.mobile,
+        createdAt: new Date(),
       });
 
-      await setDoc(doc(db, "users", userCred.user.uid), {
-        firstName,
-        lastName,
-        mobile,
-        email,
-      });
-
-      navigate("/dashboard");
+      navigate("/"); // Redirect to homepage/dashboard
     } catch (err) {
-      console.error("Signup error:", err);
-      setError(err.message);
+      console.error(err.message);
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignup = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-
       await setDoc(doc(db, "users", user.uid), {
-        firstName: user.displayName?.split(" ")[0] || "",
-        lastName: user.displayName?.split(" ")[1] || "",
-        mobile: "",
+        uid: user.uid,
         email: user.email,
+        displayName: user.displayName,
+        createdAt: new Date(),
       });
-
-      navigate("/dashboard");
+      navigate("/");
     } catch (err) {
-      console.error("Google Sign-in error:", err);
-      setError(err.message);
+      console.error(err.message);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 space-y-6">
-        <h2 className="text-2xl font-bold text-center text-gray-800">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center px-6 py-12 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900">
           Create your account
         </h2>
-
-        {error && <p className="text-sm text-red-600 text-center">{error}</p>}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              name="firstName"
-              placeholder="First Name"
-              value={formData.firstName}
-              onChange={handleChange}
-              className="w-1/2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-            <input
-              type="text"
-              name="lastName"
-              placeholder="Last Name"
-              value={formData.lastName}
-              onChange={handleChange}
-              className="w-1/2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <input
-            type="text"
-            name="mobile"
-            placeholder="Mobile Number"
-            value={formData.mobile}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email address"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-          <button
-            type="submit"
-            className="w-full py-2 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 transition"
-          >
-            Sign Up
-          </button>
-        </form>
-
-        <div className="flex items-center justify-center">
-          <span className="text-gray-400 text-sm">OR</span>
-        </div>
-
-        <button
-          onClick={handleGoogleSignIn}
-          className="w-full py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-100 transition"
-        >
-          <img
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-            alt="Google"
-            className="w-5 h-5"
-          />
-          <span className="text-sm font-medium text-gray-700">
-            Sign up with Google
-          </span>
-        </button>
-
-        <p className="text-sm text-center text-gray-600">
+        <p className="mt-2 text-sm text-gray-600">
           Already have an account?{" "}
-          <a href="/login" className="text-blue-500 hover:underline">
+          <a href="/login" className="text-blue-600 hover:underline">
             Log in
           </a>
         </p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-6 shadow rounded-lg sm:px-10">
+          <form onSubmit={handleSignup} className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <input
+                name="firstName"
+                type="text"
+                onChange={handleChange}
+                value={formData.firstName}
+                placeholder="First Name"
+                className="input input-bordered w-full"
+              />
+              <input
+                name="lastName"
+                type="text"
+                onChange={handleChange}
+                value={formData.lastName}
+                placeholder="Last Name"
+                className="input input-bordered w-full"
+              />
+            </div>
+
+            <input
+              name="mobile"
+              type="tel"
+              onChange={handleChange}
+              value={formData.mobile}
+              placeholder="Mobile Number"
+              className="input input-bordered w-full"
+            />
+
+            <input
+              name="email"
+              type="email"
+              onChange={handleChange}
+              value={formData.email}
+              placeholder="Email address"
+              className="input input-bordered w-full"
+              required
+            />
+
+            <input
+              name="password"
+              type="password"
+              onChange={handleChange}
+              value={formData.password}
+              placeholder="Password"
+              className="input input-bordered w-full"
+              required
+            />
+
+            <button
+              type="submit"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+            >
+              Sign Up
+            </button>
+          </form>
+
+          <div className="mt-6 text-center text-gray-500">OR</div>
+
+          <button
+            type="button"
+            onClick={handleGoogleSignup}
+            className="mt-4 w-full flex items-center justify-center py-2 px-4 border rounded-md bg-white text-gray-700 shadow-sm hover:shadow"
+          >
+            <img
+              src="https://www.svgrepo.com/show/475656/google-color.svg"
+              alt="Google logo"
+              className="w-5 h-5 mr-2"
+            />
+            Sign up with Google
+          </button>
+        </div>
       </div>
     </div>
   );
