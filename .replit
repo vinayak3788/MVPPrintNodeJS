@@ -2,4 +2,4 @@ run = "npm run dev"
 modules = ["nodejs-20"]
 
 [nix]
-packages = ["zip"]
+packages = ["zip", "tree"]
