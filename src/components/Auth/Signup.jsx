@@ -1,157 +1,122 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
-import { auth, db, googleProvider } from "../../services/firebaseConfig";
-import { setDoc, doc } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
+import { auth, googleProvider } from "../../services/firebaseConfig";
+import { Link } from "react-router-dom";
 
-const Signup = () => {
-  const navigate = useNavigate();
+export default function Signup() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    mobile: "",
+    mobileNumber: "",
     email: "",
     password: "",
   });
 
   const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSignup = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await createUserWithEmailAndPassword(
+      await createUserWithEmailAndPassword(
         auth,
         formData.email,
         formData.password,
       );
-
-      await setDoc(doc(db, "users", res.user.uid), {
-        uid: res.user.uid,
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        mobile: formData.mobile,
-        createdAt: new Date(),
-      });
-
-      navigate("/"); // Redirect to homepage/dashboard
-    } catch (err) {
-      console.error(err.message);
+    } catch (error) {
+      console.error("Signup error", error);
     }
   };
 
   const handleGoogleSignup = async () => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      await setDoc(doc(db, "users", user.uid), {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        createdAt: new Date(),
-      });
-      navigate("/");
-    } catch (err) {
-      console.error(err.message);
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      console.error("Google signup error", error);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center px-6 py-12 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 space-y-6">
+        <h2 className="text-2xl font-semibold text-center text-gray-800">
           Create your account
         </h2>
-        <p className="mt-2 text-sm text-gray-600">
-          Already have an account?{" "}
-          <a href="/login" className="text-blue-600 hover:underline">
-            Log in
-          </a>
-        </p>
-      </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow rounded-lg sm:px-10">
-          <form onSubmit={handleSignup} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                name="firstName"
-                type="text"
-                onChange={handleChange}
-                value={formData.firstName}
-                placeholder="First Name"
-                className="input input-bordered w-full"
-              />
-              <input
-                name="lastName"
-                type="text"
-                onChange={handleChange}
-                value={formData.lastName}
-                placeholder="Last Name"
-                className="input input-bordered w-full"
-              />
-            </div>
-
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex gap-2">
             <input
-              name="mobile"
-              type="tel"
+              type="text"
+              name="firstName"
               onChange={handleChange}
-              value={formData.mobile}
-              placeholder="Mobile Number"
-              className="input input-bordered w-full"
+              placeholder="First Name"
+              className="w-1/2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-
             <input
-              name="email"
-              type="email"
+              type="text"
+              name="lastName"
               onChange={handleChange}
-              value={formData.email}
-              placeholder="Email address"
-              className="input input-bordered w-full"
-              required
+              placeholder="Last Name"
+              className="w-1/2 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-
-            <input
-              name="password"
-              type="password"
-              onChange={handleChange}
-              value={formData.password}
-              placeholder="Password"
-              className="input input-bordered w-full"
-              required
-            />
-
-            <button
-              type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
-            >
-              Sign Up
-            </button>
-          </form>
-
-          <div className="mt-6 text-center text-gray-500">OR</div>
-
+          </div>
+          <input
+            type="tel"
+            name="mobileNumber"
+            onChange={handleChange}
+            placeholder="Mobile Number"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="email"
+            name="email"
+            onChange={handleChange}
+            placeholder="Email"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+          <input
+            type="password"
+            name="password"
+            onChange={handleChange}
+            placeholder="Password"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
           <button
-            type="button"
-            onClick={handleGoogleSignup}
-            className="mt-4 w-full flex items-center justify-center py-2 px-4 border rounded-md bg-white text-gray-700 shadow-sm hover:shadow"
+            type="submit"
+            className="w-full bg-black text-white py-2 rounded-lg font-medium hover:bg-gray-800 transition"
           >
-            <img
-              src="https://www.svgrepo.com/show/475656/google-color.svg"
-              alt="Google logo"
-              className="w-5 h-5 mr-2"
-            />
-            Sign up with Google
+            Sign Up
           </button>
+        </form>
+
+        <div className="flex items-center justify-center">
+          <span className="text-gray-400 text-sm">OR</span>
         </div>
+
+        <button
+          onClick={handleGoogleSignup}
+          className="w-full py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-100 transition"
+        >
+          <img
+            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+            alt="Google"
+            className="w-5 h-5"
+          />
+          <span className="text-sm font-medium text-gray-700">
+            Sign up with Google
+          </span>
+        </button>
+
+        <p className="text-sm text-center text-gray-600">
+          Already have an account?{" "}
+          <Link to="/login" className="text-blue-500 hover:underline">
+            Log in
+          </Link>
+        </p>
       </div>
     </div>
   );
-};
-
-export default Signup;
+}
